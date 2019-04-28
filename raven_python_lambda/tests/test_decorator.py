@@ -1,6 +1,5 @@
 import threading
 from time import sleep
-import os
 
 import pytest
 
@@ -75,3 +74,17 @@ def test_that_remote_environment_is_not_ignored(monkeypatch):
     wrapper = RavenLambdaWrapper()
     assert wrapper.config['enabled']
     assert wrapper.config['raven_client']
+
+
+def test_doesnt_error_out_if_request_context_is_present_but_not_all_keys():
+    """You can use lambda together with Application Load Balancer (ALB)
+    which uses a different set of keys than previously set. This test
+    covers all the keys that are available when called by an ALB.
+    """
+    event = dict(requestContext=dict(elb=dict(targetGroupArn='arn:aws:something')))
+
+    @RavenLambdaWrapper()
+    def test_func(event, context):
+        return dict(success=True)
+
+    assert test_func(event, FakeContext()) == dict(success=True)

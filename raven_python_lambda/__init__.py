@@ -151,7 +151,7 @@ class RavenLambdaWrapper(object):
 
             # Gather identity information from context if possible
             if event.get('requestContext'):
-                identity = event['requestContext']['identity']
+                identity = event['requestContext'].get('identity')
                 if identity:
                     raven_context['user'] = {
                          'id': identity.get('cognitoIdentityId', None),
@@ -163,11 +163,12 @@ class RavenLambdaWrapper(object):
                      }
 
                 # Add additional tags for AWS_PROXY endpoints
-                raven_context['tags'] = {
-                    'api_id': event['requestContext']['apiId'],
-                    'api_stage': event['requestContext']['stage'],
-                    'http_method': event['requestContext']['httpMethod']
-                }
+                if 'apiId' in event['requestContext']:
+                    raven_context['tags'] = {
+                        'api_id': event['requestContext']['apiId'],
+                        'api_stage': event['requestContext']['stage'],
+                        'http_method': event['requestContext']['httpMethod']
+                    }
 
             # Add cloudwatch event context
             if event.get('detail'):
@@ -189,7 +190,7 @@ class RavenLambdaWrapper(object):
                         'data': {}
                     }
 
-                    if event.get('requestContext'):
+                    if event.get('requestContext') and 'httpMethod' in event['requestContext']:
                         breadcrumb['data'] = {
                             'http_method': event['requestContext']['httpMethod'],
                             'host': (event['headers'] or {}).get('Host'),
